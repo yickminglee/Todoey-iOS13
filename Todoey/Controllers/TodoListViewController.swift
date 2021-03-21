@@ -7,71 +7,94 @@
 //
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController {
 
     var itemArray = [Item]()
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
-    //let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    
+    /// Shared singleton object -> Current app is an object. delegate is the AppDelegate. Then we downcast it as AppDelegate
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+   
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         /// Do any additional setup after loading the view.
+        /// check data file path
+        print(dataFilePath.absoluteString)
         
-        /// Add 3 to do items
-        let newItem = Item()
-        newItem.title = "Find Mike"
-        itemArray.append(newItem)
-        
-        let newItem2 = Item()
-        newItem2.title = "Take a walk"
-        itemArray.append(newItem2)
-        
-        let newItem3 = Item()
-        newItem3.title = "Sleep at 1030"
-        itemArray.append(newItem3)
-        
-        
-//        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
-//            itemArray = items
-//        }
         loadItems()
-        
     }
     
     /// MARK - save items into plist
     func saveItems() {
         /// store data
-        let encoder = PropertyListEncoder()
         do {
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+            try context.save()
         } catch {
-            print("Error encoding item array, \(error)")
+            print("Error saving context \(error)")
         }
         
         /// refresh data
         tableView.reloadData()
     }
     
-    /// MARK - load items
-    func loadItems() {
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            let decoder = PropertyListDecoder()
-            do {
-                itemArray = try decoder.decode([Item].self, from: data)
-            } catch {
-                print("Error decoding item array, \(error)")
-            }
-            
+    // MARK - load items
+    /// set default as fetch request
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+        do {
+            /// fetch data. table view data source will then pick this up
+            itemArray = try context.fetch(request)
+        } catch {
+            print("Error fetching data from context \(error)")
         }
-    
+        
+        tableView.reloadData()
+        
     }
     
 }
 
 
-//MARK: - add item via alert
+//MARK: - Extension: search bar methods
+
+extension TodoListViewController: UISearchBarDelegate {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        print(searchBar.text!)
+        
+        /// define the datatype of request, and address a value => load it onto view
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+
+        let sortDescriptorByTitle = NSSortDescriptor(key: "title", ascending: true)
+        request.sortDescriptors = [sortDescriptorByTitle]
+        
+        loadItems(with: request)
+        
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadItems()
+            
+            /// Task manager to assign this task to main thread (expedite this task) 
+            DispatchQueue.main.async {
+                /// dismiss keyboard and cursor
+                searchBar.resignFirstResponder()
+            }
+            
+        }
+    }
+    
+}
+
+
+
+
+//MARK: - Extension: add item via alert
 
 extension TodoListViewController {
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
@@ -84,9 +107,11 @@ extension TodoListViewController {
         let action = UIAlertAction(title: "Add item", style: .default) { (action) in
             /// what will happen once the user clicks the add item butoon on our UIAlert.
             
-//            print(textField.text ?? "")
-            let newItem = Item()
+            print(textField.text ?? "")
+            let newItem = Item(context: self.context)
+            
             newItem.title = textField.text!
+            newItem.done = false
 
             self.itemArray.append(newItem)
 
@@ -125,6 +150,38 @@ extension TodoListViewController {
     }
     
 }
+
+//MARK: - cell swipe to left action -> delete
+
+extension TodoListViewController {
+    
+    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        
+        /// Define delete action
+        let delete = UIContextualAction(style: .destructive,
+                                       title: "Trash") { [weak self] (action, view, completionHandler) in
+            self?.handleMoveToTrash(at: indexPath.row)
+                                        completionHandler(true)
+        }
+        
+        /// Define color of button
+        delete.backgroundColor = .systemRed
+        
+        let configuration = UISwipeActionsConfiguration(actions: [delete])
+        configuration.performsFirstActionWithFullSwipe = false
+        
+        return configuration
+    }
+    
+    private func handleMoveToTrash(at rowNumber: Int) {
+        print("Delete item")
+        context.delete(itemArray[rowNumber])
+        itemArray.remove(at: rowNumber)
+        saveItems()
+    }
+    
+}
+
 
 
 //MARK: - table view data source set up
