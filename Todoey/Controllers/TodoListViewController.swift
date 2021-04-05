@@ -12,6 +12,14 @@ import CoreData
 class TodoListViewController: UITableViewController {
 
     var itemArray = [Item]()
+    var selectedCategory : Category? {
+        // when category is set, do loadItems
+        didSet{
+            loadItems()
+        }
+    }
+    
+    
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     
     /// Shared singleton object -> Current app is an object. delegate is the AppDelegate. Then we downcast it as AppDelegate
@@ -25,7 +33,7 @@ class TodoListViewController: UITableViewController {
         /// check data file path
         print(dataFilePath.absoluteString)
         
-        loadItems()
+//        loadItems()
     }
     
     /// MARK - save items into plist
@@ -43,7 +51,18 @@ class TodoListViewController: UITableViewController {
     
     // MARK - load items
     /// set default as fetch request
-    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
+        
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        
+        if let additionalPredicate = predicate {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
+        } else {
+            request.predicate = categoryPredicate
+        }
+
+        
+        
         do {
             /// fetch data. table view data source will then pick this up
             itemArray = try context.fetch(request)
@@ -67,12 +86,11 @@ extension TodoListViewController: UISearchBarDelegate {
         
         /// define the datatype of request, and address a value => load it onto view
         let request : NSFetchRequest<Item> = Item.fetchRequest()
-        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
 
-        let sortDescriptorByTitle = NSSortDescriptor(key: "title", ascending: true)
-        request.sortDescriptors = [sortDescriptorByTitle]
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
         
-        loadItems(with: request)
+        loadItems(with: request, predicate: predicate)
         
     }
     
@@ -112,6 +130,7 @@ extension TodoListViewController {
             
             newItem.title = textField.text!
             newItem.done = false
+            newItem.parentCategory = self.selectedCategory
 
             self.itemArray.append(newItem)
 
