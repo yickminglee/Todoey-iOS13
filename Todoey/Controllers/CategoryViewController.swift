@@ -7,16 +7,15 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 
 class CategoryViewController: UITableViewController {
     
-    var categoryArray = [Category]()
+    let realm = try! Realm()
     
-    /// Shared singleton object -> Current app is an object. delegate is the AppDelegate. Then we downcast it as AppDelegate
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-   
+    /// Results data type in realm is whatever the result of your query is
+    var categories: Results<Category>?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -25,12 +24,14 @@ class CategoryViewController: UITableViewController {
     }
     
     /// MARK - save items into core data
-    func saveCategories() {
+    func save(category: Category) {
         /// store data
         do {
-            try context.save()
+            try realm.write {
+                realm.add(category)
+            }
         } catch {
-            print("Error saving context \(error)")
+            print("Error saving new category, \(error)")
         }
         
         /// refresh data
@@ -39,17 +40,14 @@ class CategoryViewController: UITableViewController {
     
     // MARK - load items
     /// set default as fetch request
-    func loadCategories(with request: NSFetchRequest<Category> = Category.fetchRequest()) {
-        do {
-            /// fetch data. table view data source will then pick this up
-            categoryArray = try context.fetch(request)
-        } catch {
-            print("Error fetching data from context \(error)")
-        }
+    func loadCategories() {
+        
+        categories = realm.objects(Category.self)
         
         tableView.reloadData()
-        
+
     }
+    
 }
 
 // MARK: - Table view data source
@@ -58,13 +56,13 @@ extension CategoryViewController {
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         // #warning Incomplete implementation, return the number of rows
-        return categoryArray.count
+        return categories?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoCategoryCell", for: indexPath)
         
-        let category = categoryArray[indexPath.row].name
+        let category = categories?[indexPath.row].name ?? "No categories were loaded"
         
         cell.textLabel?.text = category
         
@@ -86,16 +84,11 @@ extension CategoryViewController {
             /// what will happen once the user clicks the add item butoon on our UIAlert.
             
             print(textField.text ?? "")
-            let newCategory = Category(context: self.context)
             
+            let newCategory = Category()
             newCategory.name = textField.text!
-
-            self.categoryArray.append(newCategory)
-
-            /// store data - seems that it doesn't work well with user-defined class
-//            self.defaults.set(self.itemArray, forKey: "TodoListArray")
             
-            self.saveCategories()
+            self.save(category: newCategory)
         }
         
         alert.addAction(action)
@@ -114,23 +107,20 @@ extension CategoryViewController {
 
 
 
-//MARK: - cell selection action -> done / undone
+//MARK: - cell selection action -> segue
 
 extension CategoryViewController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-
         performSegue(withIdentifier: "goToItems", sender: self)
-        
-        
     }
-    
+
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         let destinationVC = segue.destination as! TodoListViewController
         // could ask an "if" statement here to check if the segue has identify "goToItems". It's necessary if there were more than one segue.
-        
+
         if let indexPath = tableView.indexPathForSelectedRow {
-            destinationVC.selectedCategory = categoryArray[indexPath.row]
+            destinationVC.selectedCategory = categories?[indexPath.row] 
         }
     }
     
@@ -139,34 +129,34 @@ extension CategoryViewController {
 
 //MARK: - cell swipe to left action -> delete
 
-extension CategoryViewController {
-    
-    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        
-        /// Define delete action
-        let delete = UIContextualAction(style: .destructive,
-                                       title: "Trash") { [weak self] (action, view, completionHandler) in
-            self?.handleMoveToTrash(at: indexPath.row)
-                                        completionHandler(true)
-        }
-        
-        /// Define color of button
-        delete.backgroundColor = .systemRed
-        
-        let configuration = UISwipeActionsConfiguration(actions: [delete])
-        configuration.performsFirstActionWithFullSwipe = false
-        
-        return configuration
-    }
-    
-    private func handleMoveToTrash(at rowNumber: Int) {
-        print("Delete category")
-        context.delete(categoryArray[rowNumber])
-        categoryArray.remove(at: rowNumber)
-        saveCategories()
-    }
-    
-}
+//extension CategoryViewController {
+//
+//    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+//
+//        /// Define delete action
+//        let delete = UIContextualAction(style: .destructive,
+//                                       title: "Trash") { [weak self] (action, view, completionHandler) in
+//            self?.handleMoveToTrash(at: indexPath.row)
+//                                        completionHandler(true)
+//        }
+//
+//        /// Define color of button
+//        delete.backgroundColor = .systemRed
+//
+//        let configuration = UISwipeActionsConfiguration(actions: [delete])
+//        configuration.performsFirstActionWithFullSwipe = false
+//
+//        return configuration
+//    }
+//
+//    private func handleMoveToTrash(at rowNumber: Int) {
+//        print("Delete category")
+//        context.delete(categoryArray[rowNumber])
+//        categoryArray.remove(at: rowNumber)
+//        saveCategories()
+//    }
+//
+//}
 
 
 
