@@ -9,19 +9,20 @@
 import UIKit
 import RealmSwift
 
-class TodoListViewController: UITableViewController {
+class TodoListViewController: SwipeTableViewController {
     
     let realm = try! Realm()
-
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    
+    
     var todoItems: Results<Item>?
+    
     var selectedCategory: Category? {
         // when category is set, do loadItems
         didSet{
             loadItems()
         }
     }
-    
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     
    
     override func viewDidLoad() {
@@ -39,6 +40,24 @@ class TodoListViewController: UITableViewController {
     /// set default as fetch request
     func loadItems() {
         todoItems = selectedCategory?.items.sorted(byKeyPath: "createdAt", ascending: true)
+        tableView.reloadData()
+    }
+    
+    
+    // MARK - delete items
+    /// set default as fetch request
+    override func handleMoveToTrash(at indexPath: IndexPath) {
+        print("Delete item")
+        if let itemForDeletion = todoItems?[indexPath.row] {
+            do {
+                try realm.write {
+                    realm.delete(itemForDeletion)
+                }
+            } catch {
+                print("Error deleting item, \(error)")
+            }
+        }
+
         tableView.reloadData()
     }
     
@@ -157,43 +176,43 @@ extension TodoListViewController {
 
 //MARK: - cell swipe to left action -> delete
 
-extension TodoListViewController {
-
-    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-
-        /// Define delete action
-        let delete = UIContextualAction(style: .destructive,
-                                       title: "Trash") { [weak self] (action, view, completionHandler) in
-            self?.handleMoveToTrash(at: indexPath.row)
-                                        completionHandler(true)
-        }
-
-        /// Define color of button
-        delete.backgroundColor = .systemRed
-
-        let configuration = UISwipeActionsConfiguration(actions: [delete])
-        configuration.performsFirstActionWithFullSwipe = false
-
-        return configuration
-    }
-
-    private func handleMoveToTrash(at rowNumber: Int) {
-        print("Delete item")
-        if let item = todoItems?[rowNumber] {
-            do {
-                try realm.write {
-                    realm.delete(item)
-                }
-            } catch {
-                print("Error deleting item, \(error)")
-            }
-        }
-        
-        tableView.reloadData()
-        
-    }
-
-}
+//extension TodoListViewController {
+//
+//    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+//
+//        /// Define delete action
+//        let delete = UIContextualAction(style: .destructive,
+//                                       title: "Trash") { [weak self] (action, view, completionHandler) in
+//            self?.handleMoveToTrash(at: indexPath.row)
+//                                        completionHandler(true)
+//        }
+//
+//        /// Define color of button
+//        delete.backgroundColor = .systemRed
+//
+//        let configuration = UISwipeActionsConfiguration(actions: [delete])
+//        configuration.performsFirstActionWithFullSwipe = false
+//
+//        return configuration
+//    }
+//
+//    private func handleMoveToTrash(at rowNumber: Int) {
+//        print("Delete item")
+//        if let item = todoItems?[rowNumber] {
+//            do {
+//                try realm.write {
+//                    realm.delete(item)
+//                }
+//            } catch {
+//                print("Error deleting item, \(error)")
+//            }
+//        }
+//        
+//        tableView.reloadData()
+//        
+//    }
+//
+//}
 
 
 
@@ -208,14 +227,15 @@ extension TodoListViewController {
     /// define row content
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
+        /// get swipe cell from super class tableview
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         if let item = todoItems?[indexPath.row] {
             let message = item.title
             let status = item.done
-            
+
             cell.textLabel?.text = message
-            
+
             /// Ternary operator =>
             /// value = condition ? valueIfTrue : valueIfFalse
             cell.accessoryType = status ? .checkmark : .none
@@ -226,3 +246,4 @@ extension TodoListViewController {
         return cell
     }
 }
+

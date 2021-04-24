@@ -9,8 +9,7 @@
 import UIKit
 import RealmSwift
 
-
-class CategoryViewController: UITableViewController {
+class CategoryViewController: SwipeTableViewController {
     
     let realm = try! Realm()
     
@@ -21,6 +20,8 @@ class CategoryViewController: UITableViewController {
         super.viewDidLoad()
         
         loadCategories()
+        
+//        tableView.rowHeight = 50
     }
     
     /// MARK - save items into core data
@@ -45,8 +46,26 @@ class CategoryViewController: UITableViewController {
         categories = realm.objects(Category.self)
         
         tableView.reloadData()
-
     }
+    
+    
+    // MARK - delete items
+    /// set default as fetch request
+    override func handleMoveToTrash(at indexPath: IndexPath) {
+        print("Delete item")
+        if let categoryForDeletion = categories?[indexPath.row] {
+            do {
+                try realm.write {
+                    realm.delete(categoryForDeletion)
+                }
+            } catch {
+                print("Error deleting category, \(error)")
+            }
+        }
+
+        tableView.reloadData()
+    }
+    
     
 }
 
@@ -55,17 +74,18 @@ class CategoryViewController: UITableViewController {
 extension CategoryViewController {
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        // #warning Incomplete implementation, return the number of rows
+        /// #warning Incomplete implementation, return the number of rows
         return categories?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoCategoryCell", for: indexPath)
+        /// get swipe cell from super class tableview
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         let category = categories?[indexPath.row].name ?? "No categories were loaded"
         
         cell.textLabel?.text = category
-        
+
         return cell
     }
     
@@ -120,43 +140,13 @@ extension CategoryViewController {
         // could ask an "if" statement here to check if the segue has identify "goToItems". It's necessary if there were more than one segue.
 
         if let indexPath = tableView.indexPathForSelectedRow {
-            destinationVC.selectedCategory = categories?[indexPath.row] 
+            destinationVC.selectedCategory = categories?[indexPath.row]
         }
     }
     
 }
 
 
-//MARK: - cell swipe to left action -> delete
-
-//extension CategoryViewController {
-//
-//    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-//
-//        /// Define delete action
-//        let delete = UIContextualAction(style: .destructive,
-//                                       title: "Trash") { [weak self] (action, view, completionHandler) in
-//            self?.handleMoveToTrash(at: indexPath.row)
-//                                        completionHandler(true)
-//        }
-//
-//        /// Define color of button
-//        delete.backgroundColor = .systemRed
-//
-//        let configuration = UISwipeActionsConfiguration(actions: [delete])
-//        configuration.performsFirstActionWithFullSwipe = false
-//
-//        return configuration
-//    }
-//
-//    private func handleMoveToTrash(at rowNumber: Int) {
-//        print("Delete category")
-//        context.delete(categoryArray[rowNumber])
-//        categoryArray.remove(at: rowNumber)
-//        saveCategories()
-//    }
-//
-//}
 
 
 
