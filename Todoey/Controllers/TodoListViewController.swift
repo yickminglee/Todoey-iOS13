@@ -119,7 +119,36 @@ class TodoListViewController: SwipeTableViewController {
 
     }
     
+    // MARK: - copy items
+    override func handleDuplicate(at indexPath: IndexPath) {
+        print("Duplicate item")
+        
+        if let currentCategory = self.selectedCategory {
+            
+            if let itemForDup = todoItems?[indexPath.row] {
+                do {
+                    try realm.write {
+                        /// add a copy of the chosen category
+                        let newItem = Item()
+                            
+                        newItem.title = itemForDup.title + " (copy)"
+                        newItem.createdAt = Date()
+                        newItem.updatedAt = Date()
+                        currentCategory.items.append(newItem)
+                    }
+                } catch {
+                    print("Error duplicating item, \(error)")
+                }
+            }
+            tableView.reloadData()
+        }
+        
+    }
+    
+    
 }
+
+
 
 
 //MARK: - Extension: search bar methods
