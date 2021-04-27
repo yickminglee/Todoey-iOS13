@@ -8,12 +8,14 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
 class TodoListViewController: SwipeTableViewController {
     
     let realm = try! Realm()
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     
+    @IBOutlet weak var searchBar: UISearchBar!
     
     var todoItems: Results<Item>?
     
@@ -32,19 +34,36 @@ class TodoListViewController: SwipeTableViewController {
         /// check data file path
         print(dataFilePath.absoluteString)
         
+        tableView.separatorStyle = .none
+        
         loadItems()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        guard let navBar = navigationController?.navigationBar else {fatalError("Navigation controller does not exist.")}
+        
+        title = selectedCategory!.name
+        
+        let navBarColor = UIColor.white
+        navBar.backgroundColor = navBarColor
+        navBar.barTintColor = navBarColor
+        navBar.tintColor = ContrastColorOf(navBarColor, returnFlat: true)
+        
+        navBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor: ContrastColorOf(navBarColor, returnFlat: true)]
+        
+        searchBar.barTintColor = navBarColor
+    }
+    
 
-    // MARK - load items
+    // MARK: - load items
     /// set default as fetch request
     func loadItems() {
-        todoItems = selectedCategory?.items.sorted(byKeyPath: "createdAt", ascending: true)
+        todoItems = selectedCategory?.items.sorted(byKeyPath: "updatedAt", ascending: true)
         tableView.reloadData()
     }
     
     
-    // MARK - delete items
+    // MARK: - delete items
     /// set default as fetch request
     override func handleMoveToTrash(at indexPath: IndexPath) {
         print("Delete item")
@@ -59,6 +78,45 @@ class TodoListViewController: SwipeTableViewController {
         }
 
         tableView.reloadData()
+    }
+    
+    
+    // MARK: - rename items
+    override func handleRename(at indexPath: IndexPath) {
+        print("Rename item")
+        
+        var textField = UITextField()
+        
+        /// show alert
+        let alert = UIAlertController(title: "Rename Todoey item", message: "", preferredStyle: .alert)
+        
+        let action = UIAlertAction(title: "Rename", style: .default) { (action) in
+            /// what will happen once the user clicks the add item butoon on our UIAlert.
+            
+            print(textField.text ?? "")
+            
+            if let itemForRename = self.todoItems?[indexPath.row] {
+                do {
+                    try self.realm.write {
+                        itemForRename.title = textField.text ?? ""
+                    }
+                } catch {
+                    print("Error renaming item, \(error)")
+                }
+            }
+            
+            self.tableView.reloadData()
+        }
+        
+        alert.addAction(action)
+        
+        alert.addTextField { (alertTextField) in
+            textField = alertTextField
+            alertTextField.placeholder = "Rename item"
+        }
+        
+        present(alert, animated: true, completion: nil)
+
     }
     
 }
@@ -121,6 +179,7 @@ extension TodoListViewController {
                         let newItem = Item()
                         newItem.title = textField.text!
                         newItem.createdAt = Date()
+                        newItem.updatedAt = Date()
                         currentCategory.items.append(newItem)
                     }
                 } catch {
@@ -174,45 +233,7 @@ extension TodoListViewController {
     
 }
 
-//MARK: - cell swipe to left action -> delete
 
-//extension TodoListViewController {
-//
-//    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-//
-//        /// Define delete action
-//        let delete = UIContextualAction(style: .destructive,
-//                                       title: "Trash") { [weak self] (action, view, completionHandler) in
-//            self?.handleMoveToTrash(at: indexPath.row)
-//                                        completionHandler(true)
-//        }
-//
-//        /// Define color of button
-//        delete.backgroundColor = .systemRed
-//
-//        let configuration = UISwipeActionsConfiguration(actions: [delete])
-//        configuration.performsFirstActionWithFullSwipe = false
-//
-//        return configuration
-//    }
-//
-//    private func handleMoveToTrash(at rowNumber: Int) {
-//        print("Delete item")
-//        if let item = todoItems?[rowNumber] {
-//            do {
-//                try realm.write {
-//                    realm.delete(item)
-//                }
-//            } catch {
-//                print("Error deleting item, \(error)")
-//            }
-//        }
-//        
-//        tableView.reloadData()
-//        
-//    }
-//
-//}
 
 
 
@@ -247,3 +268,42 @@ extension TodoListViewController {
     }
 }
 
+//MARK: - cell swipe to left action -> delete
+
+//extension TodoListViewController {
+//
+//    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+//
+//        /// Define delete action
+//        let delete = UIContextualAction(style: .destructive,
+//                                       title: "Trash") { [weak self] (action, view, completionHandler) in
+//            self?.handleMoveToTrash(at: indexPath.row)
+//                                        completionHandler(true)
+//        }
+//
+//        /// Define color of button
+//        delete.backgroundColor = .systemRed
+//
+//        let configuration = UISwipeActionsConfiguration(actions: [delete])
+//        configuration.performsFirstActionWithFullSwipe = false
+//
+//        return configuration
+//    }
+//
+//    private func handleMoveToTrash(at rowNumber: Int) {
+//        print("Delete item")
+//        if let item = todoItems?[rowNumber] {
+//            do {
+//                try realm.write {
+//                    realm.delete(item)
+//                }
+//            } catch {
+//                print("Error deleting item, \(error)")
+//            }
+//        }
+//
+//        tableView.reloadData()
+//
+//    }
+//
+//}

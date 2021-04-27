@@ -8,7 +8,7 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--Todoey-->
+        <!--Weekly To Do-->
         <scene sceneID="fz7-5N-6Df">
             <objects>
                 <tableViewController id="d2r-Dl-56C" customClass="CategoryViewController" customModule="Todoey" customModuleProvider="target" sceneMemberID="viewController">
@@ -32,9 +32,8 @@
                             <outlet property="delegate" destination="d2r-Dl-56C" id="Pac-91-ckz"/>
                         </connections>
                     </tableView>
-                    <navigationItem key="navigationItem" title="Todoey" id="d1L-xv-d5V">
+                    <navigationItem key="navigationItem" title="Weekly To Do" id="d1L-xv-d5V">
                         <barButtonItem key="rightBarButtonItem" systemItem="add" id="Rme-L9-do7">
-                            <color key="tintColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             <connections>
                                 <action selector="addButtonPressed:" destination="d2r-Dl-56C" id="VVG-F2-afU"/>
                             </connections>
@@ -88,6 +87,9 @@
                             </connections>
                         </barButtonItem>
                     </navigationItem>
+                    <connections>
+                        <outlet property="searchBar" destination="hsV-WA-vGq" id="Ho2-H8-J3H"/>
+                    </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="1Rh-G8-cY6" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
@@ -98,8 +100,8 @@
             <objects>
                 <navigationController automaticallyAdjustsScrollViewInsets="NO" id="Fq6-ne-RkE" sceneMemberID="viewController">
                     <toolbarItems/>
-                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="1Bl-k2-bko">
-                        <rect key="frame" x="0.0" y="44" width="414" height="44"/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" largeTitles="YES" id="1Bl-k2-bko">
+                        <rect key="frame" x="0.0" y="44" width="414" height="96"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <color key="barTintColor" red="0.92549019607843142" green="0.94117647058823528" blue="0.94509803921568625" alpha="1" colorSpace="calibratedRGB"/>
                     </navigationBar>

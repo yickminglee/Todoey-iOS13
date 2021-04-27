@@ -16,6 +16,20 @@ class SwipeTableViewController: UITableViewController, SwipeTableViewCellDelegat
 
     }
     
+    // get week number
+    func getWeekNumber (date: Date) -> (weekNumber: Int?, yearForWeekOfYear: Int?) {
+        let gregorian = NSCalendar(calendarIdentifier: NSCalendar.Identifier.gregorian)!
+        gregorian.firstWeekday = 2 // Monday
+        gregorian.minimumDaysInFirstWeek = 4
+        
+        let components =
+            gregorian.components([NSCalendar.Unit.weekOfYear, NSCalendar.Unit.yearForWeekOfYear], from: date)
+        let weekNumber = components.weekOfYear
+        let yearForWeekOfYear = components.yearForWeekOfYear
+        
+        return (weekNumber, yearForWeekOfYear)
+    }
+    
     
     //MARK: - tableview datasource method
     
@@ -41,11 +55,23 @@ class SwipeTableViewController: UITableViewController, SwipeTableViewCellDelegat
             print("delete cell")
             self.handleMoveToTrash(at: indexPath)
         }
+        
+        let duplicateAction = SwipeAction(style: .default, title: "Copy") { action, indexPath in
+            // handle action by updating model with deletion
+            print("copy cell")
+            self.handleDuplicate(at: indexPath)
+        }
+        
+        let renameAction = SwipeAction(style: .default, title: "Rename") { action, indexPath in
+            // handle action by updating model with deletion
+            print("rename cell")
+            self.handleRename(at: indexPath)
+        }
 
         // customize the action appearance
         //deleteAction.image = UIImage(named: "delete-icon")
 
-        return [deleteAction]
+        return [deleteAction, renameAction, duplicateAction]
     }
 
     /// optional code 
@@ -58,6 +84,14 @@ class SwipeTableViewController: UITableViewController, SwipeTableViewCellDelegat
     
     
     func handleMoveToTrash(at indexPath: IndexPath) {
+        // Update our data model. Config in sub class
+    }
+    
+    func handleDuplicate(at indexPath: IndexPath) {
+        // Update our data model. Config in sub class
+    }
+    
+    func handleRename(at indexPath: IndexPath) {
         // Update our data model. Config in sub class
     }
     

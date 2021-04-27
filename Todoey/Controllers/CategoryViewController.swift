@@ -8,6 +8,7 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
 class CategoryViewController: SwipeTableViewController {
     
@@ -16,15 +17,33 @@ class CategoryViewController: SwipeTableViewController {
     /// Results data type in realm is whatever the result of your query is
     var categories: Results<Category>?
     
+    /// get a set of items for duplicate category
+    var todoItems: Results<Item>?
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         loadCategories()
         
+        tableView.separatorStyle = .none
 //        tableView.rowHeight = 50
     }
     
-    /// MARK - save items into core data
+    override func viewWillAppear(_ animated: Bool) {
+        guard let navBar = navigationController?.navigationBar else {fatalError("Navigation controller does not exist.")}
+        let navBarColor = UIColor.white
+        navBar.backgroundColor = navBarColor
+        navBar.barTintColor = navBarColor
+        navBar.tintColor = ContrastColorOf(navBarColor, returnFlat: true)
+        
+        navBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor: ContrastColorOf(navBarColor, returnFlat: true)]
+        
+    }
+
+
+    
+    // MARK: - save items into core data
     func save(category: Category) {
         /// store data
         do {
@@ -39,7 +58,7 @@ class CategoryViewController: SwipeTableViewController {
         tableView.reloadData()
     }
     
-    // MARK - load items
+    // MARK: - load items
     /// set default as fetch request
     func loadCategories() {
         
@@ -49,8 +68,7 @@ class CategoryViewController: SwipeTableViewController {
     }
     
     
-    // MARK - delete items
-    /// set default as fetch request
+    // MARK: - delete items
     override func handleMoveToTrash(at indexPath: IndexPath) {
         print("Delete item")
         if let categoryForDeletion = categories?[indexPath.row] {
@@ -60,6 +78,95 @@ class CategoryViewController: SwipeTableViewController {
                 }
             } catch {
                 print("Error deleting category, \(error)")
+            }
+        }
+
+        tableView.reloadData()
+    }
+    
+    
+    
+    
+    // MARK: - rename items
+    override func handleRename(at indexPath: IndexPath) {
+        print("Rename item")
+        
+        var textField = UITextField()
+        
+        /// show alert
+        let alert = UIAlertController(title: "Rename Todoey category", message: "", preferredStyle: .alert)
+        
+        let action = UIAlertAction(title: "Rename", style: .default) { (action) in
+            /// what will happen once the user clicks the add item butoon on our UIAlert.
+            
+            print(textField.text ?? "")
+            
+            if let categoryForRename = self.categories?[indexPath.row] {
+                do {
+                    try self.realm.write {
+                        categoryForRename.name = textField.text ?? ""
+                        categoryForRename.updatedAt = Date()
+                    }
+                } catch {
+                    print("Error renaming category, \(error)")
+                }
+            }
+            
+            self.tableView.reloadData()
+        }
+        
+        alert.addAction(action)
+        
+        alert.addTextField { (alertTextField) in
+            textField = alertTextField
+            alertTextField.placeholder = "Rename category"
+        }
+        
+        present(alert, animated: true, completion: nil)
+
+    }
+    
+    
+    // MARK: - duplicate items
+    override func handleDuplicate(at indexPath: IndexPath) {
+        print("Duplicate item")
+        
+        
+        if let categoryForDup = categories?[indexPath.row] {
+            do {
+                try realm.write {
+                    /// add a copy of the chosen category
+                    let newCategory = Category()
+
+                    if let weekNumber = getWeekNumber(date: Date()).weekNumber
+                       , let yearForWeekOfYear = getWeekNumber(date: Date()).yearForWeekOfYear {
+                        print(weekNumber)
+                        print(yearForWeekOfYear)
+                        
+    //                    newCategory.name = categoryForDup.name + " (copy)"
+                        newCategory.name = String(yearForWeekOfYear) + " Week #" + String(weekNumber)
+                        newCategory.createdAt = Date()
+                        newCategory.updatedAt = Date()
+                        realm.add(newCategory)
+                    }
+                    
+                    
+                    /// add the not-done items from chosen category to the new copy
+                    todoItems = categoryForDup.items.sorted(byKeyPath: "createdAt", ascending: true)
+                    todoItems = todoItems?.filter("done != true")
+                    
+                    if let itemsToAdd = todoItems {
+                        for newItem in itemsToAdd {
+                            newCategory.items.append(newItem)
+                        }
+                    } else {
+                        print("Error no to do itmes were available to be copied.")
+                    }
+                    
+                    
+                }
+            } catch {
+                print("Error duplicating category, \(error)")
             }
         }
 
@@ -85,6 +192,8 @@ extension CategoryViewController {
         let category = categories?[indexPath.row].name ?? "No categories were loaded"
         
         cell.textLabel?.text = category
+        
+//        cell.backgroundColor = UIColor.randomFlat()
 
         return cell
     }
@@ -107,6 +216,7 @@ extension CategoryViewController {
             
             let newCategory = Category()
             newCategory.name = textField.text!
+            newCategory.createdAt = Date()
             
             self.save(category: newCategory)
         }
@@ -116,6 +226,14 @@ extension CategoryViewController {
         alert.addTextField { (alertTextField) in
             textField = alertTextField
             alertTextField.placeholder = "Create new category"
+            /// set default text in alertTextField, use week number
+            if let weekNumber = self.getWeekNumber(date: Date()).weekNumber
+               , let yearForWeekOfYear = self.getWeekNumber(date: Date()).yearForWeekOfYear {
+                print(weekNumber)
+                print(yearForWeekOfYear)
+                alertTextField.text = String(yearForWeekOfYear) + " Week #" + String(weekNumber)
+            }
+            
         }
         
         present(alert, animated: true, completion: nil)
@@ -133,6 +251,7 @@ extension CategoryViewController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         performSegue(withIdentifier: "goToItems", sender: self)
+        tableView.deselectRow(at: indexPath, animated: true)
     }
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
