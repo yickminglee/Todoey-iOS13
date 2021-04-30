@@ -174,7 +174,14 @@ class CategoryViewController: SwipeTableViewController {
     }
     
     
+    
+    
 }
+
+//protocol CanEditText {
+//
+//}
+
 
 // MARK: - Table view data source
     
@@ -203,40 +210,72 @@ extension CategoryViewController {
 // MARK: - Table view add new category via alert
     
 extension CategoryViewController {
-    @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
+    
+    //MARK: - text alert
+    
+    func textAlert(popUpTitle:String, popUpButton:String, textBoxTitle:String, textBoxDefault:String) -> String {
         var textField = UITextField()
         
         /// show alert
-        let alert = UIAlertController(title: "Add new Todoey category", message: "", preferredStyle: .alert)
+        let alert = UIAlertController(title: popUpTitle, message: "", preferredStyle: .alert)
         
-        let action = UIAlertAction(title: "Add", style: .default) { (action) in
+        let action = UIAlertAction(title: popUpButton, style: .default) { (action) in
             /// what will happen once the user clicks the add item butoon on our UIAlert.
             
             print(textField.text ?? "")
             
-            let newCategory = Category()
-            newCategory.name = textField.text!
-            newCategory.createdAt = Date()
-            
-            self.save(category: newCategory)
+            // do something here, may need to add delegate //
+            return textField.text!
         }
         
         alert.addAction(action)
         
         alert.addTextField { (alertTextField) in
             textField = alertTextField
-            alertTextField.placeholder = "Create new category"
-            /// set default text in alertTextField, use week number
-            if let weekNumber = self.getWeekNumber(date: Date()).weekNumber
-               , let yearForWeekOfYear = self.getWeekNumber(date: Date()).yearForWeekOfYear {
-                print(weekNumber)
-                print(yearForWeekOfYear)
-                alertTextField.text = String(yearForWeekOfYear) + " Week #" + String(weekNumber)
-            }
-            
+            alertTextField.placeholder = textBoxTitle
+            alertTextField.text = textBoxDefault
         }
         
         present(alert, animated: true, completion: nil)
+
+    }
+    
+    @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
+//        text = textAlert(popUpTitle: "Rename category", popUpButton: "Rename", textBoxTitle: "New Name", textBoxDefault: "default")
+//        print(text)
+//        var textField = UITextField()
+//
+//        /// show alert
+//        let alert = UIAlertController(title: "Add new Todoey category", message: "", preferredStyle: .alert)
+//
+//        let action = UIAlertAction(title: "Add", style: .default) { (action) in
+//            /// what will happen once the user clicks the add item butoon on our UIAlert.
+//
+//            print(textField.text ?? "")
+//
+//            let newCategory = Category()
+//            newCategory.name = textField.text!
+//            newCategory.createdAt = Date()
+//
+//            self.save(category: newCategory)
+//        }
+//
+//        alert.addAction(action)
+//
+//        alert.addTextField { (alertTextField) in
+//            textField = alertTextField
+//            alertTextField.placeholder = "Create new category"
+//            /// set default text in alertTextField, use week number
+//            if let weekNumber = self.getWeekNumber(date: Date()).weekNumber
+//               , let yearForWeekOfYear = self.getWeekNumber(date: Date()).yearForWeekOfYear {
+//                print(weekNumber)
+//                print(yearForWeekOfYear)
+//                alertTextField.text = String(yearForWeekOfYear) + " Week #" + String(weekNumber)
+//            }
+//
+//        }
+//
+//        present(alert, animated: true, completion: nil)
         
     }
 
