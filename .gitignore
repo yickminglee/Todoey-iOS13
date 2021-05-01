@@ -64,4 +64,6 @@ Packages/
 # vim
 *.swp
 
+# CocoaPods
+Pods
 
