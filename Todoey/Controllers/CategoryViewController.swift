@@ -173,14 +173,8 @@ class CategoryViewController: SwipeTableViewController {
         tableView.reloadData()
     }
     
-    
-    
-    
 }
 
-//protocol CanEditText {
-//
-//}
 
 
 // MARK: - Table view data source
@@ -213,36 +207,52 @@ extension CategoryViewController {
     
     //MARK: - text alert
     
-    func textAlert(popUpTitle:String, popUpButton:String, textBoxTitle:String, textBoxDefault:String) -> String {
+    func textAlert(popUpTitle:String, popUpButton:String, textBoxTitle:String, textBoxDefault:String, inputTextHandler: @escaping (_ inputText: String?) -> Void) {
         var textField = UITextField()
-        
+
         /// show alert
         let alert = UIAlertController(title: popUpTitle, message: "", preferredStyle: .alert)
-        
+
         let action = UIAlertAction(title: popUpButton, style: .default) { (action) in
             /// what will happen once the user clicks the add item butoon on our UIAlert.
-            
+
             print(textField.text ?? "")
             
-            // do something here, may need to add delegate //
-            return textField.text!
+            if let inputText = textField.text {
+                inputTextHandler(inputText)
+            }
+
         }
         
+
         alert.addAction(action)
-        
+
         alert.addTextField { (alertTextField) in
             textField = alertTextField
             alertTextField.placeholder = textBoxTitle
             alertTextField.text = textBoxDefault
         }
-        
-        present(alert, animated: true, completion: nil)
 
-    }
+        present(alert, animated: true, completion: nil)
+        
+
+    }/// end of function
     
+
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
-//        text = textAlert(popUpTitle: "Rename category", popUpButton: "Rename", textBoxTitle: "New Name", textBoxDefault: "default")
-//        print(text)
+        
+        textAlert(popUpTitle: "Rename category", popUpButton: "Rename", textBoxTitle: "New Name", textBoxDefault: "default") { inputText in
+            if let inputText = inputText{
+                print(inputText)
+                
+                let newCategory = Category()
+                newCategory.name = inputText
+                newCategory.createdAt = Date()
+   
+                self.save(category: newCategory)
+            }
+        }
+        
 //        var textField = UITextField()
 //
 //        /// show alert
